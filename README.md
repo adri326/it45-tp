@@ -1,3 +1,3 @@
 # TP d'IT45
 
-Solutions aux exercices du TP1 d'IT45.
+Solutions aux exercices des TP d'IT45 "Optimisation et recherche opérationnelle".
