@@ -48,7 +48,7 @@ double dist2(float a[2], float b[2]) {
 
 /// Computes the `dist` matrix, returning a 2d array of dimensions (n_coords, n_coords)
 double* compute_distance(float coords[][2], size_t n_coords) {
-    double* res = malloc(sizeof(float) * n_coords * n_coords);
+    double* res = malloc(sizeof(double) * n_coords * n_coords);
     for (size_t x = 0; x < n_coords; x++) {
         res[x*n_coords + x] = -1;
         for (size_t y = 0; y < x; y++) {
