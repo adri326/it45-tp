@@ -13,23 +13,24 @@
 
 
 /* Distance matrix */
-extern double dist[NBR_TOWNS][NBR_TOWNS] ;
+double dist[NBR_TOWNS][NBR_TOWNS] ;
 
 /* Each edge has a starting and ending node */
-extern int starting_town[NBR_TOWNS] ;
-extern int ending_town[NBR_TOWNS] ;
+int starting_town[NBR_TOWNS] ;
+int ending_town[NBR_TOWNS] ;
 
 /* no comment */
-extern int best_solution[NBR_TOWNS] ;
-extern double best_eval=-1.0 ;
+int best_solution[NBR_TOWNS] ;
+double best_eval=-1.0 ;
 
 
+// TODO: replace `float[2]` by a bitcast-able struct
 /**
  * Berlin52 :
  *  6 towns : Best solution (2315.15): 0 1 2 3 5 4
  * 10 towns : Best solution (2826.50): 0 1 6 2 7 8 9 3 5 4
  */
-extern float coord[NBR_TOWNS][2]=
+float coord[NBR_TOWNS][2]=
 {
     {565.0,  575.0},
     { 25.0,  185.0},
@@ -39,7 +40,25 @@ extern float coord[NBR_TOWNS][2]=
     {880.0,  660.0}
 } ;
 
+double dist2(float a[2], float b[2]) {
+    float dx = a[0] - b[0];
+    float dy = a[1] - b[1];
+    return sqrt(dx * dx + dy * dy);
+}
 
+/// Computes the `dist` matrix, returning a 2d array of dimensions (n_coords, n_coords)
+double* compute_distance(float coords[][2], size_t n_coords) {
+    double* res = malloc(sizeof(float) * n_coords * n_coords);
+    for (size_t x = 0; x < n_coords; x++) {
+        res[x*n_coords + x] = -1;
+        for (size_t y = 0; y < x; y++) {
+            res[y*n_coords + x] = dist2(coords[x], coords[y]);
+            res[x*n_coords + y] = res[y*n_coords + x];
+        }
+    }
+
+    return res;
+}
 
 /**
  * print a matrix
@@ -101,12 +120,12 @@ double evaluation_solution(int* sol)
 double build_nearest_neighbour()
 {
     /* solution of the nearest neighbour */
-    int i, sol[NBR_TOWNS] ;
+    // int i, sol[NBR_TOWNS] ;
 
     /* evaluation of the solution */
     double eval = 0 ;
 
-    sol[0] = 0 ;
+    // sol[0] = 0 ;
 
     /**
      *  Build an heuristic solution : the nearest neighbour
@@ -200,7 +219,7 @@ void little_algorithm(double d0[NBR_TOWNS][NBR_TOWNS], int iteration, double eva
     double d[NBR_TOWNS][NBR_TOWNS] ;
     memcpy (d, d0, NBR_TOWNS*NBR_TOWNS*sizeof(double)) ;
 
-    int i, j ;
+    // int i, j ;
 
     double eval_node_child = eval_node_parent;
 
@@ -293,6 +312,10 @@ int main (int argc, char* argv[])
      *  ...
      *  ...
      */
+
+    double* dist_tmp = compute_distance(coord, NBR_TOWNS);
+    memcpy(dist, dist_tmp, sizeof(double) * NBR_TOWNS * NBR_TOWNS);
+    free(dist_tmp);
 
     printf ("Distance Matrix:\n") ;
     print_matrix (dist) ;

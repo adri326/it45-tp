@@ -1,4 +1,5 @@
 CC_FLAGS += -Wall -Wextra
+LINK_FLAGS += -lm
 ifdef DEBUG
 CC_FLAGS += -g
 else

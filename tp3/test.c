@@ -4,7 +4,35 @@
 #include "little.h"
 
 START_TEST(test_distance) {
+    float coords[2][2] = {
+        {565.0, 575.0},
+        {25.0, 185.0}
+    };
 
+    double* distances = compute_distance(coords, 2);
+
+    ck_assert_double_eq_tol(distances[0*2 + 0], -1.0, 0.0001);
+    ck_assert_double_eq_tol(distances[1*2 + 1], -1.0, 0.0001);
+    ck_assert_double_eq_tol(distances[1*2 + 0], 666.10809, 0.0001);
+    ck_assert_double_eq_tol(distances[0*2 + 1], 666.10809, 0.0001);
+
+    free(distances);
+
+    // Check permutation-independance
+
+    float coords2[2][2] = {
+        {25.0, 185.0},
+        {565.0, 575.0}
+    };
+
+    distances = compute_distance(coords2, 2);
+
+    ck_assert_double_eq_tol(distances[0*2 + 0], -1.0, 0.0001);
+    ck_assert_double_eq_tol(distances[1*2 + 1], -1.0, 0.0001);
+    ck_assert_double_eq_tol(distances[1*2 + 0], 666.10809, 0.0001);
+    ck_assert_double_eq_tol(distances[0*2 + 1], 666.10809, 0.0001);
+
+    free(distances);
 }
 END_TEST
 
@@ -30,6 +58,7 @@ Suite* little_suite() {
     Suite* s = suite_create("little");
     TCase* tc_core = tcase_create("core");
 
+    tcase_add_test(tc_core, test_distance);
     tcase_add_test(tc_core, test_evaluation);
     suite_add_tcase(s, tc_core);
 
