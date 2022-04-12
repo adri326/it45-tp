@@ -43,14 +43,44 @@ START_TEST(test_evaluation) {
         solution[n] = n;
         if (n < NBR_TOWNS - 1) expected += dist[n][n + 1];
     }
-    ck_assert_double_eq_tol(evaluation_solution(solution), expected, 0.0001);
+    ck_assert_double_eq_tol(evaluate(solution), expected, 0.0001);
 
     // Invert order
     for (size_t n = 0; n < NBR_TOWNS; n++) {
         solution[n] = NBR_TOWNS - n - 1;
     }
 
-    ck_assert_double_eq_tol(evaluation_solution(solution), expected, 0.0001);
+    ck_assert_double_eq_tol(evaluate(solution), expected, 0.0001);
+}
+END_TEST
+
+START_TEST(test_nearest_neighbor) {
+    float coords[4][2] = {
+        {1.0, 0.0},
+        {1.0, 1.0},
+        {0.0, 0.0},
+        {0.0, 1.0}
+    };
+    double* dist = compute_distance(coords, 4);
+
+    struct nn_t sol = build_nearest_neighbor(dist, 4);
+
+    ck_assert_double_eq_tol(sol.evaluation, 4.0, 0.0001);
+
+    ck_assert_int_eq(sol.solution[0], 0);
+
+    if (sol.solution[1] == 1) {
+        ck_assert_int_eq(sol.solution[1], 1);
+        ck_assert_int_eq(sol.solution[2], 3);
+        ck_assert_int_eq(sol.solution[3], 2);
+    } else if (sol.solution[1] == 2) {
+        ck_assert_int_eq(sol.solution[1], 2);
+        ck_assert_int_eq(sol.solution[2], 3);
+        ck_assert_int_eq(sol.solution[3], 1);
+    }
+
+    free(sol.solution);
+    free(dist);
 }
 END_TEST
 
@@ -60,6 +90,7 @@ Suite* little_suite() {
 
     tcase_add_test(tc_core, test_distance);
     tcase_add_test(tc_core, test_evaluation);
+    tcase_add_test(tc_core, test_nearest_neighbor);
     suite_add_tcase(s, tc_core);
 
     return s;

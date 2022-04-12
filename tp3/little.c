@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <stdbool.h>
 #include "little.h"
 
 
@@ -97,7 +98,7 @@ void print_solution(int* sol, double eval)
 /**
  * evaluation of a solution
  */
-double evaluation_solution(int* sol)
+double evaluate(int* sol)
 {
     double eval=0 ;
     int i ;
@@ -115,34 +116,85 @@ double evaluation_solution(int* sol)
 
 
 /**
- * nearest neighbour solution
- */
-double build_nearest_neighbour()
-{
-    /* solution of the nearest neighbour */
-    // int i, sol[NBR_TOWNS] ;
+    @fn double build_nearest_neighbor(double* dist, size_t n_towns)
+    Computes the path governed by the nearest neighbor heuristic; this is a quick way to get an upper bound of the solution.
+    @arg dist - the distance matrix; is expected to be allocated such that `dist[y * n_towns + x]` is
+        the distance from city `y` to city `x`.
+    @arg n_towns - the number of towns; `dist` should have as size `n_towns * n_towns`.
+    @return The distance travalled by the solution.
+        In unit test mode, a struct containing the solution and the distance is returned; its `solution` field should be freed.
+**/
+#ifdef UNIT_TEST
+    struct nn_t build_nearest_neighbor(double* dist, size_t n_towns) {
+#else
+    double build_nearest_neighbor(double* dist, size_t n_towns) {
+#endif
+    // Build the solution
+    int* solution = malloc(sizeof(int) * n_towns);
+    for (size_t i = 0; i < NBR_TOWNS; i++) solution[i] = -1;
 
-    /* evaluation of the solution */
-    double eval = 0 ;
+    size_t current = 0;
+    solution[0] = 0;
 
-    // sol[0] = 0 ;
+    double evaluation = 0.0;
 
-    /**
-     *  Build an heuristic solution : the nearest neighbour
-     *  TO COMPLETE
-     *  ...
-     *  ...
-     *
-     *
-     * eval = evaluation_solution(sol) ;
-     * printf("Nearest neighbour ") ;
-     * print_solution (sol, eval) ;
-     *
-     * for (i=0;i<NBR_TOWNS;i++) best_solution[i] = sol[i] ;
-     * best_eval  = eval ;
-     */
+    for (size_t n = 1; n < n_towns; n++) {
+        int candidate = -1;
+        double candidate_score = 0.0;
+        for (size_t j = 1; j < n_towns; j++) {
+            bool already_reached = false;
+            if (j == current || dist[current * n_towns + j] < 0) continue; // Ignore invalid paths
+            for (size_t i = 0; i < n; i++) {
+                already_reached = already_reached || (solution[i] == (int)j);
+            }
+            if (already_reached) continue; // Ignore cities already explored
 
-    return eval ;
+            if (dist[current * n_towns + j] < candidate_score || candidate == -1) {
+                candidate = j;
+                candidate_score = dist[current * n_towns + j];
+            }
+        }
+
+        if (candidate == -1) {
+            fprintf(stderr, "No city reachable from city %zu!\n", current);
+            if (n > 1) fprintf(stderr, "Path so far:\n");
+            for (size_t i = 1; i < n; i++) {
+                fprintf(stderr, "%d -> %d\n", solution[i - 1], solution[i]);
+            }
+
+            #ifdef UNIT_TEST
+                struct nn_t res = {
+                    .solution = NULL,
+                    .evaluation = -1.0
+                };
+                return res;
+            #else
+                return -1.0;
+            #endif
+        }
+
+        current = candidate;
+        solution[n] = candidate;
+        evaluation += candidate_score;
+    }
+
+    evaluation += dist[current * n_towns + 0];
+
+    // for (size_t i = 1; i < n_towns; i++) {
+    //     printf("%d -> %d\n", solution[i - 1], solution[i]);
+    // }
+
+#ifdef UNIT_TEST
+    struct nn_t res = {
+        .solution = solution,
+        .evaluation = evaluation
+    };
+    return res;
+#else
+    // Only return the evaluation of the solution
+    free(solution);
+    return evaluation;
+#endif
 }
 
 
@@ -187,7 +239,7 @@ void build_solution()
         indiceCour++;
     }
 
-    double eval = evaluation_solution(solution) ;
+    double eval = evaluate(solution) ;
 
     if (best_eval<0 || eval < best_eval)
     {
@@ -317,14 +369,13 @@ int main (int argc, char* argv[])
     memcpy(dist, dist_tmp, sizeof(double) * NBR_TOWNS * NBR_TOWNS);
     free(dist_tmp);
 
-    printf ("Distance Matrix:\n") ;
-    print_matrix (dist) ;
-    printf ("\n") ;
+    printf("Distance Matrix:\n") ;
+    print_matrix(dist) ;
+    printf("\n") ;
 
-    /** Nearest Neighbour heuristic : uncomment when needed
-     *
-     *  double nearest_neighbour = build_nearest_neighbour() ;
-     */
+    double nearest_neighbour = build_nearest_neighbor((double*)dist, NBR_TOWNS);
+
+    printf("%lf\n", nearest_neighbour);
 
     /** Little : uncomment when needed
      *

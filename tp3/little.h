@@ -13,8 +13,18 @@ extern float coord[NBR_TOWNS][2];
 extern double* compute_distance(float coords[][2], size_t n_coords);
 extern void print_matrix(double d[NBR_TOWNS][NBR_TOWNS]);
 extern void print_solution(int* sol, double eval);
-extern double evaluation_solution(int* sol);
-extern double build_nearest_neighbour();
+extern double evaluate(int* sol);
+
+#ifdef UNIT_TEST
+    struct nn_t {
+        double evaluation;
+        int* solution;
+    };
+    extern struct nn_t build_nearest_neighbor(double* dist, size_t n_towns);
+#else
+    extern double build_nearest_neighbor(double* dist, size_t n_towns);
+#endif
+
 extern void build_solution();
 extern void little_algorithm(double d0[NBR_TOWNS][NBR_TOWNS], int iteration, double eval_node_parent);
 
