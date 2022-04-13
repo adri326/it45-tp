@@ -37,16 +37,16 @@ START_TEST(test_evaluation) {
     for (size_t n = 0; n < NBR_TOWNS; n++) {
         solution[n] = n;
         if (n < NBR_TOWNS - 1)
-            expected += dist[n][n + 1];
+            expected += dist[(n + 1) * NBR_TOWNS + n];
     }
-    ck_assert_double_eq_tol(evaluate(solution), expected, 0.0001);
+    ck_assert_double_eq_tol(evaluate(solution, NBR_TOWNS), expected, 0.0001);
 
     // Invert order
     for (size_t n = 0; n < NBR_TOWNS; n++) {
         solution[n] = NBR_TOWNS - n - 1;
     }
 
-    ck_assert_double_eq_tol(evaluate(solution), expected, 0.0001);
+    ck_assert_double_eq_tol(evaluate(solution, NBR_TOWNS), expected, 0.0001);
 }
 END_TEST
 

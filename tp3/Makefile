@@ -6,6 +6,10 @@ else
 CC_FLAGS += -O3
 endif
 
+ifdef VERBOSE
+CC_FLAGS += -DVERBOSE
+endif
+
 BUILD_DIR = build
 SRC_DIR = .
 SRC = $(SRC_DIR)/little.c
