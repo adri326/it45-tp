@@ -114,21 +114,10 @@ double evaluate(int* sol)
 
 
 
-
-/**
-    @fn double build_nearest_neighbor(double* dist, size_t n_towns)
-    Computes the path governed by the nearest neighbor heuristic; this is a quick way to get an upper bound of the solution.
-    @arg dist - the distance matrix; is expected to be allocated such that `dist[y * n_towns + x]` is
-        the distance from city `y` to city `x`.
-    @arg n_towns - the number of towns; `dist` should have as size `n_towns * n_towns`.
-    @return The distance travalled by the solution.
-        In unit test mode, a struct containing the solution and the distance is returned; its `solution` field should be freed.
+/** @fn build_nearest_neighbor_sub(dist, n_towns)
+    Function called by `build_nearest_neighbor`.
 **/
-#ifdef UNIT_TEST
-    struct nn_t build_nearest_neighbor(double* dist, size_t n_towns) {
-#else
-    double build_nearest_neighbor(double* dist, size_t n_towns) {
-#endif
+struct nn_t build_nearest_neighbor_sub(double* dist, size_t n_towns) {
     // Build the solution
     int* solution = malloc(sizeof(int) * n_towns);
     for (size_t i = 0; i < NBR_TOWNS; i++) solution[i] = -1;
@@ -162,15 +151,11 @@ double evaluate(int* sol)
                 fprintf(stderr, "%d -> %d\n", solution[i - 1], solution[i]);
             }
 
-            #ifdef UNIT_TEST
-                struct nn_t res = {
-                    .solution = NULL,
-                    .evaluation = -1.0
-                };
-                return res;
-            #else
-                return -1.0;
-            #endif
+            struct nn_t res = {
+                .solution = NULL,
+                .evaluation = -1.0
+            };
+            return res;
         }
 
         current = candidate;
@@ -184,21 +169,28 @@ double evaluate(int* sol)
     //     printf("%d -> %d\n", solution[i - 1], solution[i]);
     // }
 
-#ifdef UNIT_TEST
     struct nn_t res = {
         .solution = solution,
         .evaluation = evaluation
     };
     return res;
-#else
-    // Only return the evaluation of the solution
-    free(solution);
-    return evaluation;
-#endif
 }
 
+/**
+    @fn double build_nearest_neighbor(double* dist, size_t n_towns)
+    Computes the path governed by the nearest neighbor heuristic; this is a quick way to get an upper bound of the solution.
+    @arg dist - the distance matrix; is expected to be allocated such that `dist[y * n_towns + x]` is
+        the distance from city `y` to city `x`.
+    @arg n_towns - the number of towns; `dist` should have as size `n_towns * n_towns`.
+    @return The total distance travelled in the solution.
+**/
+double build_nearest_neighbor(double* dist, size_t n_towns) {
+    struct nn_t res = build_nearest_neighbor_sub(dist, n_towns);
 
+    free(res.solution);
 
+    return res.evaluation;
+}
 
 /**
  *  Build final solution

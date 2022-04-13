@@ -15,15 +15,12 @@ extern void print_matrix(double d[NBR_TOWNS][NBR_TOWNS]);
 extern void print_solution(int* sol, double eval);
 extern double evaluate(int* sol);
 
-#ifdef UNIT_TEST
-    struct nn_t {
-        double evaluation;
-        int* solution;
-    };
-    extern struct nn_t build_nearest_neighbor(double* dist, size_t n_towns);
-#else
-    extern double build_nearest_neighbor(double* dist, size_t n_towns);
-#endif
+struct nn_t {
+    double evaluation;
+    int* solution;
+};
+extern struct nn_t build_nearest_neighbor_sub(double* dist, size_t n_towns);
+extern double build_nearest_neighbor(double* dist, size_t n_towns);
 
 extern void build_solution();
 extern void little_algorithm(double d0[NBR_TOWNS][NBR_TOWNS], int iteration, double eval_node_parent);
