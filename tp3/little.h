@@ -23,6 +23,10 @@ extern struct nn_t build_nearest_neighbor_sub(double* dist, size_t n_towns);
 extern double build_nearest_neighbor(double* dist, size_t n_towns);
 
 extern void build_solution();
-extern void little_algorithm(double d0[NBR_TOWNS][NBR_TOWNS], int iteration, double eval_node_parent);
+extern void little_algorithm(
+    double d0[NBR_TOWNS][NBR_TOWNS],
+    int iteration,
+    double eval_node_parent
+);
 
 #endif // LITTLE_H

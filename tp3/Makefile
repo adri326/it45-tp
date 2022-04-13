@@ -17,6 +17,9 @@ all: $(BUILD_DIR) $(BUILD_DIR)/little $(BUILD_DIR)/little-test
 clean:
 	rm -f $(OBJ) $(OBJ_TEST) $(BUILD_DIR)/test.o $(BUILD_DIR)/little $(BUILD_DIR)/little-test
 
+format:
+	clang-format -i little.c little.h test.c
+
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
