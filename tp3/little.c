@@ -16,13 +16,14 @@
 // double* dist = NULL;
 
 /* Each edge has a starting and ending node */
-// TODO: malloc this
 int* starting_town = NULL;
 int* ending_town = NULL;
 
 /* no comment */
 int* best_solution = NULL;
 double best_eval = -1.0;
+
+int* valid_buffer = NULL;
 
 // TODO: replace `float[2]` by a bitcast-able struct
 /**
@@ -249,11 +250,15 @@ bool is_valid_full_path(const int* path, size_t n_cities) {
 }
 
 bool is_valid_sub_solution(int* starting_town, int* ending_town, size_t iteration, size_t n_cities) {
-    // PERF TODO: don't malloc here
-    int* indirect = malloc(sizeof(int) * n_cities);
-    bool* visited = malloc(sizeof(bool) * n_cities);
+    // PERF: use valid_buffer here
+    int* indirect = valid_buffer;
+    // Black magic to share the same malloc for visited
+    bool* visited = (bool*)((void*)valid_buffer + sizeof(int) * n_cities);
 
-    for (size_t index = 0; index < n_cities; index++) indirect[index] = -1;
+    for (size_t index = 0; index < n_cities; index++) {
+        indirect[index] = -1;
+        visited[index] = false;
+    }
 
     for (size_t index = 0; index < iteration; index++) {
         indirect[starting_town[index]] = ending_town[index];
@@ -277,9 +282,6 @@ bool is_valid_sub_solution(int* starting_town, int* ending_town, size_t iteratio
         }
     }
 
-    free(indirect);
-    free(visited);
-
     return true;
 }
 
@@ -287,8 +289,7 @@ bool is_valid_sub_solution(int* starting_town, int* ending_town, size_t iteratio
  *  Build final solution
  */
 void build_solution(const double* dist, int* starting_town, int* ending_town, size_t n_cities) {
-    // PERF TODO: don't malloc here, use static instead?
-    int* solution = malloc(sizeof(int) * n_cities);
+    int* solution = valid_buffer;
     int current = 0;
 
     for (size_t index = 0; index < n_cities; index++) {
@@ -309,13 +310,11 @@ void build_solution(const double* dist, int* starting_town, int* ending_town, si
             for (size_t n = 0; n < n_cities; n++) {
                 fprintf(stderr, "%zu: (%d -> %d)\n", n, starting_town[n], ending_town[n]);
             }
-            free(solution);
             return;
         }
     }
 
     if (!is_valid_full_path(solution, n_cities)) {
-        free(solution);
         return;
     }
 
@@ -324,7 +323,9 @@ void build_solution(const double* dist, int* starting_town, int* ending_town, si
     if (best_eval < 0 || eval < best_eval) {
         best_eval = eval;
         if (best_solution != NULL) free(best_solution);
-        best_solution = solution;
+        best_solution = malloc(sizeof(int) * n_cities);
+
+        for (size_t n = 0; n < n_cities; n++) best_solution[n] = solution[n];
 
         #ifdef VERBOSE
         solution_t best_solution = {
@@ -334,8 +335,6 @@ void build_solution(const double* dist, int* starting_town, int* ending_town, si
         printf("New best solution: ");
         print_solution(best_solution, n_cities);
         #endif // VERBOSE
-    } else {
-        free(solution);
     }
 }
 
@@ -344,10 +343,10 @@ solution_t little_algorithm(
     size_t n_cities,
     bool little_plus
 ) {
-    double* dist2 = malloc(sizeof(double) * n_cities * n_cities);
-    memcpy(dist2, dist, sizeof(double) * n_cities * n_cities);
+    double* buffer = malloc(sizeof(double) * n_cities * n_cities * (n_cities + 1));
+    memcpy(buffer, dist, sizeof(double) * n_cities * n_cities);
 
-    double nearest_neighbour = build_nearest_neighbor((double*)dist2, n_cities);
+    double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
 
     // best_eval = nextafter(nearest_neighbour, INFINITY); // nearest_neighbour += ε
     best_eval = nearest_neighbour + 0.1;
@@ -355,9 +354,12 @@ solution_t little_algorithm(
     starting_town = malloc(sizeof(int) * n_cities);
     ending_town = malloc(sizeof(int) * n_cities);
 
-    little_algorithm_rec(dist, dist2, 0, 0.0, n_cities, little_plus);
+    valid_buffer = malloc(sizeof(int) * n_cities + sizeof(bool) * n_cities);
 
-    free(dist2);
+    little_algorithm_rec(dist, buffer, 0, 0.0, n_cities, little_plus);
+
+    free(valid_buffer);
+    free(buffer);
     free(starting_town);
     free(ending_town);
 
@@ -397,12 +399,14 @@ solution_t little_algorithm(
  */
 void little_algorithm_rec(
     const double* dist,
-    double* current_dist,
+    double* buffer,
     size_t iteration,
     double eval_node_parent,
     size_t n_cities,
     bool little_plus
 ) {
+    double* current_dist = &buffer[n_cities * n_cities * iteration];
+
     if (iteration == n_cities) {
         build_solution(dist, starting_town, ending_town, n_cities);
         return;
@@ -507,7 +511,7 @@ void little_algorithm_rec(
     ending_town[iteration] = y_zero;
 
     // Do the modification on a copy of the distance matrix
-    double* current_dist2 = malloc(sizeof(double) * n_cities * n_cities);
+    double* current_dist2 = &buffer[n_cities * n_cities * (iteration + 1)];
     memcpy(current_dist2, current_dist, sizeof(double) * n_cities * n_cities);
 
     /**
@@ -527,9 +531,9 @@ void little_algorithm_rec(
     printf("[%zu, %.2lf, %.2lf] Exploring branch %zu→%zu\n", iteration, eval, best_eval, x_zero, y_zero);
     #endif
     /* Explore left child node according to given choice */
-    little_algorithm_rec(dist, current_dist2, iteration + 1, eval, n_cities, little_plus);
+    little_algorithm_rec(dist, buffer, iteration + 1, eval, n_cities, little_plus);
 
-    free(current_dist2);
+    // free(current_dist2);
 
     // The right branch is computed on dist, so we don't have to re-allocate more memory
 
@@ -544,5 +548,5 @@ void little_algorithm_rec(
     printf("[%zu, %.2lf, %.2lf] Exploring branch ¬%zu→%zu\n", iteration, eval, best_eval, x_zero, y_zero);
     #endif
     /* Explore right child node according to non-choice */
-    little_algorithm_rec(dist, current_dist, iteration, eval, n_cities, little_plus);
+    little_algorithm_rec(dist, buffer, iteration, eval, n_cities, little_plus);
 }
