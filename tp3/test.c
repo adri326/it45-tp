@@ -199,7 +199,7 @@ END_TEST
 START_TEST(test_little_berlin) {
     double* dist = compute_distance(berlin52_coords, 6);
 
-    solution_t sol = little_algorithm(dist, 6);
+    solution_t sol = little_algorithm(dist, 6, false);
     int expected_6[6] = {0, 1, 2, 3, 5, 4};
 
     check_solution(&sol, expected_6, dist, 6);
@@ -209,7 +209,7 @@ START_TEST(test_little_berlin) {
 
     dist = compute_distance(berlin52_coords, 10);
 
-    sol = little_algorithm(dist, 10);
+    sol = little_algorithm(dist, 10, false);
     int expected_10[10] = {0, 1, 6, 2, 7, 8, 9, 3, 5, 4};
 
     check_solution(&sol, expected_10, dist, 10);
@@ -242,7 +242,7 @@ START_TEST(test_little_better) {
         // printf("\n");
 
         solution_t nn_sol = build_nearest_neighbor_sub(dist, n_cities);
-        solution_t little_sol = little_algorithm(dist, n_cities);
+        solution_t little_sol = little_algorithm(dist, n_cities, false);
 
         ck_assert_double_le_tol(little_sol.evaluation, nn_sol.evaluation, 0.0001);
 
@@ -262,6 +262,44 @@ START_TEST(test_is_valid_full_path) {
 }
 END_TEST
 
+// Verify that little+ gives the same result as little
+START_TEST(test_little_plus) {
+    int seed = time(0);
+    srand(seed);
+    printf("Seed: %d\n", seed);
+
+    for (size_t i = 0; i < 1000; i++) {
+        size_t n_cities = rand() % 9 + 4;
+
+        double* dist = malloc(sizeof(double) * n_cities * n_cities);
+
+        for (size_t x = 0; x < n_cities; x++) {
+            dist[x * n_cities + x] = -1.0;
+
+            for (size_t y = 0; y < x; y++) {
+                dist[y * n_cities + x] = dist[x * n_cities + y] = 1000.0 * rand() / (double)RAND_MAX;
+            }
+        }
+
+        // print_matrix(dist, n_cities);
+        // printf("\n");
+
+        solution_t nn_sol = build_nearest_neighbor_sub(dist, n_cities);
+        solution_t little_sol = little_algorithm(dist, n_cities, false);
+        solution_t little_plus_sol = little_algorithm(dist, n_cities, true);
+
+        ck_assert_double_le_tol(little_sol.evaluation, nn_sol.evaluation, 0.0001);
+        ck_assert_double_eq_tol(little_sol.evaluation, little_plus_sol.evaluation, 0.0001);
+
+        check_solution(&little_plus_sol, little_sol.solution, dist, n_cities);
+
+        free_solution(nn_sol);
+        free_solution(little_sol);
+        free_solution(little_plus_sol);
+    }
+}
+END_TEST
+
 Suite* little_suite() {
     Suite* s = suite_create("little");
     TCase* tc_core = tcase_create("core");
@@ -275,6 +313,8 @@ Suite* little_suite() {
     tcase_add_test(tc_core, test_little_berlin);
     tcase_add_test(tc_core, test_little_better);
     tcase_add_test(tc_core, test_is_valid_full_path);
+
+    tcase_add_test(tc_core, test_little_plus);
     suite_add_tcase(s, tc_core);
 
     return s;

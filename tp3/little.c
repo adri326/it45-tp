@@ -248,13 +248,38 @@ bool is_valid_full_path(const int* path, size_t n_cities) {
     return true;
 }
 
-bool is_valid_sub_path(const int* path, size_t iteration, size_t n_cities) {
-    // TODO
-    return true;
-}
-
 bool is_valid_sub_solution(int* starting_town, int* ending_town, size_t iteration, size_t n_cities) {
-    // TODO
+    // PERF TODO: don't malloc here
+    int* indirect = malloc(sizeof(int) * n_cities);
+    bool* visited = malloc(sizeof(bool) * n_cities);
+
+    for (size_t index = 0; index < n_cities; index++) indirect[index] = -1;
+
+    for (size_t index = 0; index < iteration; index++) {
+        indirect[starting_town[index]] = ending_town[index];
+    }
+
+    for (size_t base = 0; base < n_cities; base++) {
+        size_t ptr = base;
+        while (indirect[ptr] >= 0) {
+            // Node already checked
+            //@variant sum(visited)
+            if (visited[ptr]) break;
+
+            visited[ptr] = true;
+
+            // as per the loop condition,
+            //@check indirect[ptr] >= 0
+            ptr = (size_t)indirect[ptr];
+
+            // Cycle detected!
+            if (ptr == base) return false;
+        }
+    }
+
+    free(indirect);
+    free(visited);
+
     return true;
 }
 
@@ -316,7 +341,8 @@ void build_solution(const double* dist, int* starting_town, int* ending_town, si
 
 solution_t little_algorithm(
     const double* dist,
-    size_t n_cities
+    size_t n_cities,
+    bool little_plus
 ) {
     double* dist2 = malloc(sizeof(double) * n_cities * n_cities);
     memcpy(dist2, dist, sizeof(double) * n_cities * n_cities);
@@ -329,7 +355,7 @@ solution_t little_algorithm(
     starting_town = malloc(sizeof(int) * n_cities);
     ending_town = malloc(sizeof(int) * n_cities);
 
-    little_algorithm_rec(dist, dist2, 0, 0.0, n_cities, false);
+    little_algorithm_rec(dist, dist2, 0, 0.0, n_cities, little_plus);
 
     free(dist2);
     free(starting_town);
@@ -380,7 +406,7 @@ void little_algorithm_rec(
     if (iteration == n_cities) {
         build_solution(dist, starting_town, ending_town, n_cities);
         return;
-    } else if (little_plus) {
+    } else if (little_plus && iteration > 0) {
         if (!is_valid_sub_solution(starting_town, ending_town, iteration, n_cities)) {
             return;
         }

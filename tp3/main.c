@@ -27,12 +27,10 @@ int main(int argc, char* argv[]) {
     double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
     printf("%lf\n", nearest_neighbour);
 
-    solution_t solution = little_algorithm(dist, n_cities);
+    solution_t solution = little_algorithm(dist, n_cities, true);
 
-    if (solution.solution != NULL) {
-        printf("Best solution:\n");
-        print_solution(solution, n_cities);
-    }
+    printf("Best solution:\n");
+    print_solution(solution, n_cities);
 
     free_solution(solution);
     free(dist);
