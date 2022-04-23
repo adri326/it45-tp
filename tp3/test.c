@@ -32,26 +32,40 @@ START_TEST(test_distance) {
 END_TEST
 
 START_TEST(test_evaluation) {
-    int solution[NBR_TOWNS];
+    const size_t n_cities = 8;
+    int* solution = malloc(sizeof(int) * n_cities);
     double expected = 0.0;
-    for (size_t n = 0; n < NBR_TOWNS; n++) {
-        solution[n] = n;
-        if (n < NBR_TOWNS - 1)
-            expected += dist[(n + 1) * NBR_TOWNS + n];
+    double* dist = malloc(sizeof(double) * n_cities * n_cities);
+
+    for (size_t x = 0; x < n_cities; x++) {
+        for (size_t y = 0; y <= x; y++) {
+            dist[y * n_cities + x] = dist[x * n_cities + y] = 1000.0 * rand() / (double)RAND_MAX;
+        }
     }
-    ck_assert_double_eq_tol(evaluate(solution, NBR_TOWNS), expected, 0.0001);
+
+    for (size_t n = 0; n < n_cities; n++) {
+        solution[n] = n;
+        if (n < n_cities - 1)
+            expected += dist[(n + 1) * n_cities + n];
+    }
+    expected += dist[0 + solution[n_cities - 1]];
+
+    ck_assert_double_eq_tol(evaluate(dist, solution, n_cities), expected, 0.0001);
 
     // Invert order
-    for (size_t n = 0; n < NBR_TOWNS; n++) {
-        solution[n] = NBR_TOWNS - n - 1;
+    for (size_t n = 1; n < n_cities; n++) {
+        solution[n] = n_cities - n;
     }
 
-    ck_assert_double_eq_tol(evaluate(solution, NBR_TOWNS), expected, 0.0001);
+    ck_assert_double_eq_tol(evaluate(dist, solution, n_cities), expected, 0.0001);
+
+    free(solution);
+    free(dist);
 }
 END_TEST
 
 void check_nn_solution(
-    struct nn_t* solution,
+    solution_t* solution,
     int* expected,
     double* dist,
     size_t n_cities
@@ -88,7 +102,7 @@ START_TEST(test_nearest_neighbor_simple) {
     double* dist = compute_distance(coords, 4);
     int expected[] = {0, 1, 3, 2};
 
-    struct nn_t solution = build_nearest_neighbor_sub(dist, 4);
+    solution_t solution = build_nearest_neighbor_sub(dist, 4);
 
     check_nn_solution(&solution, expected, dist, 4);
 
@@ -144,7 +158,7 @@ START_TEST(test_nearest_neighbor_random) {
             double* dist = compute_distance(coords, n_cities);
 
             // Build nearest neighbor solution
-            struct nn_t solution = build_nearest_neighbor_sub(dist, n_cities);
+            solution_t solution = build_nearest_neighbor_sub(dist, n_cities);
 
             // Compare with expected solution
             check_nn_solution(&solution, expected, dist, n_cities);
@@ -153,6 +167,7 @@ START_TEST(test_nearest_neighbor_random) {
             free(dist);
             free(order);
             free(expected);
+            free(coords);
         }
     }
 }
