@@ -30,7 +30,7 @@ double best_eval = -1.0;
  *  6 towns : Best solution (2315.15): 0 1 2 3 5 4
  * 10 towns : Best solution (2826.50): 0 1 6 2 7 8 9 3 5 4
  */
-float coord[][2] = {
+float berlin52_coords[][2] = {
     {565.0, 575.0},
     {25.0, 185.0},
     {345.0, 750.0},
@@ -50,7 +50,39 @@ float coord[][2] = {
     {145.0, 665.0},
     {415.0, 635.0},
     {510.0, 875.0},
-    {560.0, 365.0}
+    {560.0, 365.0},
+    {300.0, 465.0},
+    {520.0, 585.0},
+    {480.0, 415.0},
+    {835.0, 625.0},
+    {975.0, 580.0},
+    {1215.0, 245.0},
+    {1320.0, 315.0},
+    {1250.0, 400.0},
+    {660.0, 180.0},
+    {410.0, 250.0},
+    {420.0, 555.0},
+    {575.0, 665.0},
+    {1150.0, 1160.0},
+    {700.0, 580.0},
+    {685.0, 595.0},
+    {685.0, 610.0},
+    {770.0, 610.0},
+    {795.0, 645.0},
+    {720.0, 635.0},
+    {760.0, 650.0},
+    {475.0, 960.0},
+    {95.0, 260.0},
+    {875.0, 920.0},
+    {700.0, 500.0},
+    {555.0, 815.0},
+    {830.0, 485.0},
+    {1170.0, 65.0},
+    {830.0, 610.0},
+    {605.0, 625.0},
+    {595.0, 360.0},
+    {1340.0, 725.0},
+    {1740.0, 245.0}
 };
 
 double dist2(float a[2], float b[2]) {
@@ -204,26 +236,38 @@ double build_nearest_neighbor(const double* dist, size_t n_cities) {
 }
 
 /**
+ * Check whether the full path doesn't contain any sub-cycle; it is of time complexity Θ(n²)
+ **/
+bool is_valid_full_path(const int* path, size_t n_cities) {
+    for (size_t n = 0; n < n_cities; n++) {
+        for (size_t i = 0; i < n; i++) {
+            if (path[i] == path[n]) return false;
+        }
+    }
+
+    return true;
+}
+
+bool is_valid_sub_path(const int* path, size_t iteration, size_t n_cities) {
+    // TODO
+    return true;
+}
+
+bool is_valid_sub_solution(int* starting_town, int* ending_town, size_t iteration, size_t n_cities) {
+    // TODO
+    return true;
+}
+
+/**
  *  Build final solution
  */
 void build_solution(const double* dist, int* starting_town, int* ending_town, size_t n_cities) {
+    // PERF TODO: don't malloc here, use static instead?
     int* solution = malloc(sizeof(int) * n_cities);
     int current = 0;
 
     for (size_t index = 0; index < n_cities; index++) {
         solution[index] = current;
-
-        // Test si le cycle est hamiltonien (n*O(n))
-        for (size_t i = 0; i < index; i++) {
-            if (solution[i] == current) {
-                // fprintf(stderr, "Non-hamiltonian cycle!\n");
-                // for (size_t n = 0; n < n_cities; n++) {
-                //     fprintf(stderr, "%zu: (%d -> %d)\n", n, starting_town[n], ending_town[n]);
-                // }
-                free(solution);
-                return;
-            }
-        }
 
         // Recherche de la ville suivante
         bool found = false;
@@ -245,6 +289,11 @@ void build_solution(const double* dist, int* starting_town, int* ending_town, si
         }
     }
 
+    if (!is_valid_full_path(solution, n_cities)) {
+        free(solution);
+        return;
+    }
+
     double eval = evaluate(dist, solution, n_cities);
 
     if (best_eval < 0 || eval < best_eval) {
@@ -252,12 +301,14 @@ void build_solution(const double* dist, int* starting_town, int* ending_town, si
         if (best_solution != NULL) free(best_solution);
         best_solution = solution;
 
-        printf("New best solution: ");
+        #ifdef VERBOSE
         solution_t best_solution = {
             .solution = solution,
             .evaluation = best_eval
         };
+        printf("New best solution: ");
         print_solution(best_solution, n_cities);
+        #endif // VERBOSE
     } else {
         free(solution);
     }
@@ -272,21 +323,45 @@ solution_t little_algorithm(
 
     double nearest_neighbour = build_nearest_neighbor((double*)dist2, n_cities);
 
-    best_eval = nextafter(nearest_neighbour, INFINITY); // nearest_neighbor += ε
+    // best_eval = nextafter(nearest_neighbour, INFINITY); // nearest_neighbour += ε
+    best_eval = nearest_neighbour + 0.1;
 
     starting_town = malloc(sizeof(int) * n_cities);
     ending_town = malloc(sizeof(int) * n_cities);
 
-    little_algorithm_rec(dist, dist2, 0, 0.0, n_cities);
+    little_algorithm_rec(dist, dist2, 0, 0.0, n_cities, false);
 
     free(dist2);
     free(starting_town);
     free(ending_town);
 
+    // Monomorphize solution: if solution[1] > solution[n_cities - 1], swap the order around, check that the evaluation is the same and return that
+    if (best_solution && n_cities > 2 && best_solution[1] > best_solution[n_cities - 1]) {
+        int* mono_solution = malloc(sizeof(int) * n_cities);
+        mono_solution[0] = best_solution[0];
+        for (size_t n = 0; n < (n_cities - 1) / 2; n++) {
+            mono_solution[1 + n] = best_solution[n_cities - n - 1];
+            mono_solution[n_cities - n - 1] = best_solution[1 + n];
+        }
+
+        if (n_cities % 2 == 0) {
+            mono_solution[(n_cities - 1) / 2 + 1] = best_solution[(n_cities - 1) / 2 + 1];
+        }
+
+        double mono_eval = evaluate(dist, mono_solution, n_cities);
+        if (mono_eval <= best_eval) {
+            free(best_solution);
+            best_solution = mono_solution;
+            best_eval = mono_eval;
+        }
+    }
+
     solution_t res = {
         .solution = best_solution,
-        .evaluation = best_eval
+        .evaluation = best_solution != NULL ? best_eval : INFINITY
     };
+
+    best_solution = NULL;
 
     return res;
 }
@@ -295,15 +370,20 @@ solution_t little_algorithm(
  *  Little Algorithm
  */
 void little_algorithm_rec(
-    const double* g_dist,
+    const double* dist,
     double* current_dist,
     size_t iteration,
     double eval_node_parent,
-    size_t n_cities
+    size_t n_cities,
+    bool little_plus
 ) {
     if (iteration == n_cities) {
-        build_solution(g_dist, starting_town, ending_town, n_cities);
+        build_solution(dist, starting_town, ending_town, n_cities);
         return;
+    } else if (little_plus) {
+        if (!is_valid_sub_solution(starting_town, ending_town, iteration, n_cities)) {
+            return;
+        }
     }
 
     // We do the modifications directly on current_dist;
@@ -355,7 +435,7 @@ void little_algorithm_rec(
     /* Cut : stop the exploration of this node */
     if (best_eval >= 0 && eval >= best_eval) {
         #ifdef VERBOSE
-        printf("[%d, %.2lf, %.2lf] Cut!\n", iteration, eval, best_eval);
+        printf("[%zu, %.2lf, %.2lf] Cut!\n", iteration, eval, best_eval);
         #endif
         return;
     }
@@ -418,10 +498,10 @@ void little_algorithm_rec(
     current_dist2[x_zero * n_cities + y_zero] = -1;
 
     #ifdef VERBOSE
-    printf("[%d, %.2lf, %.2lf] Exploring branch %zu→%zu\n", iteration, eval, best_eval, x_zero, y_zero);
+    printf("[%zu, %.2lf, %.2lf] Exploring branch %zu→%zu\n", iteration, eval, best_eval, x_zero, y_zero);
     #endif
     /* Explore left child node according to given choice */
-    little_algorithm_rec(g_dist, current_dist2, iteration + 1, eval, n_cities);
+    little_algorithm_rec(dist, current_dist2, iteration + 1, eval, n_cities, little_plus);
 
     free(current_dist2);
 
@@ -435,49 +515,8 @@ void little_algorithm_rec(
     current_dist[y_zero * n_cities + x_zero] = -1;
 
     #ifdef VERBOSE
-    printf("[%d, %.2lf, %.2lf] Exploring branch ¬%zu→%zu\n", iteration, eval, best_eval, x_zero, y_zero);
+    printf("[%zu, %.2lf, %.2lf] Exploring branch ¬%zu→%zu\n", iteration, eval, best_eval, x_zero, y_zero);
     #endif
     /* Explore right child node according to non-choice */
-    little_algorithm_rec(g_dist, current_dist, iteration, eval, n_cities);
+    little_algorithm_rec(dist, current_dist, iteration, eval, n_cities, little_plus);
 }
-
-// We provide an alternative main() if we're in unit testing mode
-#ifndef UNIT_TEST
-
-/**
- *
- */
-int main(int argc, char* argv[]) {
-    const size_t n_cities = 10;
-
-    /* Print problem informations */
-    printf("Points coordinates:\n");
-    for (size_t i = 0; i < n_cities; i++) {
-        printf("Node %zu: x=%f, y=%f\n", i, coord[i][0], coord[i][1]);
-    }
-    printf("\n");
-
-    // Calcul de la matrice des distances
-    double* dist = compute_distance(coord, n_cities);
-
-    printf("Distance Matrix:\n");
-    print_matrix(dist, n_cities);
-    printf("\n");
-
-    double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
-    printf("%lf\n", nearest_neighbour);
-
-    solution_t solution = little_algorithm(dist, n_cities);
-
-    if (solution.solution != NULL) {
-        printf("Best solution:\n");
-        print_solution(solution, n_cities);
-    }
-
-    free_solution(solution);
-    free(dist);
-
-    return 0;
-}
-
-#endif // UNIT_TEST
