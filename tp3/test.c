@@ -199,7 +199,7 @@ END_TEST
 START_TEST(test_little_berlin) {
     double* dist = compute_distance(berlin52_coords, 6);
 
-    solution_t sol = little_algorithm(dist, 6, false);
+    solution_t sol = little_algorithm(dist, 6, false, 0);
     int expected_6[6] = {0, 1, 2, 3, 5, 4};
 
     check_solution(&sol, expected_6, dist, 6);
@@ -209,7 +209,7 @@ START_TEST(test_little_berlin) {
 
     dist = compute_distance(berlin52_coords, 10);
 
-    sol = little_algorithm(dist, 10, false);
+    sol = little_algorithm(dist, 10, false, 0);
     int expected_10[10] = {0, 1, 6, 2, 7, 8, 9, 3, 5, 4};
 
     check_solution(&sol, expected_10, dist, 10);
@@ -242,7 +242,7 @@ START_TEST(test_little_better) {
         // printf("\n");
 
         solution_t nn_sol = build_nearest_neighbor_sub(dist, n_cities);
-        solution_t little_sol = little_algorithm(dist, n_cities, false);
+        solution_t little_sol = little_algorithm(dist, n_cities, false, 0);
 
         ck_assert_double_le_tol(little_sol.evaluation, nn_sol.evaluation, 0.0001);
 
@@ -285,8 +285,8 @@ START_TEST(test_little_plus) {
         // printf("\n");
 
         solution_t nn_sol = build_nearest_neighbor_sub(dist, n_cities);
-        solution_t little_sol = little_algorithm(dist, n_cities, false);
-        solution_t little_plus_sol = little_algorithm(dist, n_cities, true);
+        solution_t little_sol = little_algorithm(dist, n_cities, false, 0);
+        solution_t little_plus_sol = little_algorithm(dist, n_cities, true, 0);
 
         ck_assert_double_le_tol(little_sol.evaluation, nn_sol.evaluation, 0.0001);
         ck_assert_double_eq_tol(little_sol.evaluation, little_plus_sol.evaluation, 0.0001);

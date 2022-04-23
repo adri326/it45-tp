@@ -338,18 +338,93 @@ void build_solution(const double* dist, int* starting_town, int* ending_town, si
     }
 }
 
+double little_approx(
+    const double* dist,
+    size_t n_cities,
+    size_t k
+) {
+    double* sub_dist = malloc(sizeof(double) * (n_cities - k) * (n_cities - k));
+
+    for (size_t y = 0; y < n_cities - k; y++) {
+        memcpy(&sub_dist[y * (n_cities - k)], &dist[y * n_cities], sizeof(double) * (n_cities - k));
+    }
+
+    solution_t sub_solution = little_algorithm(sub_dist, n_cities - k, true, 0);
+
+    if (sub_solution.solution == NULL) return INFINITY;
+
+    int* current_path = malloc(sizeof(int) * n_cities);
+
+    // registers to store the position of `n-1`, `n-2`, ..., `n-k`
+    // since the first element is always 0, a count of 0 means that it's actually at the 1st spot
+    size_t* counts = malloc(sizeof(size_t) * k);
+    for (size_t i = 0; i < k; i++) {
+        counts[i] = 0;
+    }
+
+    double best_eval = INFINITY;
+
+    // Θ(n!/(n-k)!) ~ Ω(n^k)
+    while (counts[k - 1] < n_cities - 1) {
+        memcpy(current_path, sub_solution.solution, sizeof(int) * (n_cities - k));
+        for (size_t i = 0; i < k; i++) {
+            for (size_t j = n_cities - 1; j > counts[i] + 1; j--) {
+                current_path[j] = current_path[j - 1];
+            }
+            current_path[counts[i] + 1] = n_cities - k + i;
+        }
+
+        double eval = evaluate(dist, current_path, n_cities);
+
+        // for (size_t i = 0; i < k; i++) printf("%02zu ", counts[i]);
+        // for (size_t i = 0; i < n_cities; i++) printf("%02d ", current_path[i]);
+        // printf(": %.2lf\n", eval);
+
+        if (eval < best_eval) best_eval = eval;
+
+
+        // Increment counts
+        counts[0]++;
+        size_t i = 0;
+        while (i < k - 1 && counts[i] >= n_cities - k + i) {
+            counts[i] = 0;
+            i++;
+            if (i < k) counts[i]++;
+        }
+    }
+
+    free_solution(sub_solution);
+    free(current_path);
+
+    return best_eval;
+}
+
 solution_t little_algorithm(
     const double* dist,
     size_t n_cities,
-    bool little_plus
+    bool little_plus,
+    int better_approx
 ) {
+    if (better_approx > 0 && n_cities > 20) {
+        best_eval = little_approx(dist, n_cities, better_approx);
+
+        double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
+
+        printf("approx: %lf, nn: %lf\n", best_eval, nearest_neighbour);
+
+        if (nearest_neighbour < best_eval) {
+            best_eval = nearest_neighbour;
+        }
+
+        best_eval += 0.1;
+    } else {
+        double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
+
+        best_eval = nearest_neighbour + 0.1;
+    }
+
     double* buffer = malloc(sizeof(double) * n_cities * n_cities * (n_cities + 1));
     memcpy(buffer, dist, sizeof(double) * n_cities * n_cities);
-
-    double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
-
-    // best_eval = nextafter(nearest_neighbour, INFINITY); // nearest_neighbour += ε
-    best_eval = nearest_neighbour + 0.1;
 
     starting_town = malloc(sizeof(int) * n_cities);
     ending_town = malloc(sizeof(int) * n_cities);

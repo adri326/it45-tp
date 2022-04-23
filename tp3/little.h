@@ -39,7 +39,8 @@ extern void little_algorithm_rec(
 extern solution_t little_algorithm(
     const double* dist,
     size_t n_towns,
-    bool little_plus
+    bool little_plus,
+    int better_approx
 );
 
 #endif // LITTLE_H

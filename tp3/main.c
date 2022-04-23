@@ -8,6 +8,9 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Invalid number of cities given as parameter: expected a number between 1 and %d, got %d\n", MAX_CITIES, arg);
     }
 
+    int better_approx = argc > 2 ? atoi(argv[2]) : 0;
+    if (better_approx < 0) better_approx = 0;
+
     const size_t n_cities = (size_t)arg;
 
     /* Print problem informations */
@@ -27,7 +30,7 @@ int main(int argc, char* argv[]) {
     double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
     printf("%lf\n", nearest_neighbour);
 
-    solution_t solution = little_algorithm(dist, n_cities, true);
+    solution_t solution = little_algorithm(dist, n_cities, true, better_approx);
 
     printf("Best solution:\n");
     print_solution(solution, n_cities);

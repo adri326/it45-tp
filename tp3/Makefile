@@ -6,6 +6,8 @@ else
 CC_FLAGS += -O3
 endif
 
+CC_FLAGS += -g
+
 ifdef VERBOSE
 CC_FLAGS += -DVERBOSE
 endif
