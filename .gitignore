@@ -5,3 +5,4 @@ tp1/berlin52.*
 tp1/tsp-coord2distmatrix.sci
 build/
 *.o
+*.csv
