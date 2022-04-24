@@ -1,0 +1,209 @@
+\documentclass[12pt]{article}
+
+\setlength{\parskip}{1em}
+
+\usepackage[T1]{fontenc}
+\usepackage[a4paper, margin=0.7in]{geometry}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{stmaryrd}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{pdfpages}
+\usepackage[french]{babel}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{charter}
+
+\pgfplotsset{compat=1.18}
+
+% \usepgfplotslibrary{external}
+% \tikzexternalize
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  pdftitle={RS40: TP1}
+}
+
+\lstset{literate=
+  {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+  {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+  {à}{{\`a}}1 {è}{{\`e}}1 {ì}{{\`i}}1 {ò}{{\`o}}1 {ù}{{\`u}}1
+  {À}{{\`A}}1 {È}{{\'E}}1 {Ì}{{\`I}}1 {Ò}{{\`O}}1 {Ù}{{\`U}}1
+  {ä}{{\"a}}1 {ë}{{\"e}}1 {ï}{{\"i}}1 {ö}{{\"o}}1 {ü}{{\"u}}1
+  {Ä}{{\"A}}1 {Ë}{{\"E}}1 {Ï}{{\"I}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1
+  {â}{{\^a}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1
+  {Â}{{\^A}}1 {Ê}{{\^E}}1 {Î}{{\^I}}1 {Ô}{{\^O}}1 {Û}{{\^U}}1
+  {ã}{{\~a}}1 {ẽ}{{\~e}}1 {ĩ}{{\~i}}1 {õ}{{\~o}}1 {ũ}{{\~u}}1
+  {Ã}{{\~A}}1 {Ẽ}{{\~E}}1 {Ĩ}{{\~I}}1 {Õ}{{\~O}}1 {Ũ}{{\~U}}1
+  {œ}{{\oe}}1 {Œ}{{\OE}}1 {æ}{{\ae}}1 {Æ}{{\AE}}1 {ß}{{\ss}}1
+  {ű}{{\H{u}}}1 {Ű}{{\H{U}}}1 {ő}{{\H{o}}}1 {Ő}{{\H{O}}}1
+  {ç}{{\c c}}1 {Ç}{{\c C}}1 {ø}{{\o}}1 {å}{{\r a}}1 {Å}{{\r A}}1
+  {€}{{\euro}}1 {£}{{\pounds}}1 {«}{{\guillemotleft}}1
+  {»}{{\guillemotright}}1 {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {¿}{{?`}}1 {¡}{{!`}}1
+}
+\definecolor{bgColor}{rgb}{0.97,0.97,0.965}
+\lstdefinestyle{C}{
+  aboveskip=0.2cm,
+  belowskip=0.2cm,
+  backgroundcolor=\color{bgColor},
+  commentstyle=\color{gray},
+  keywordstyle=\color{magenta},
+  numberstyle=\tiny\color{gray},
+  stringstyle=\color{purple},
+  basicstyle=\footnotesize,
+  breakatwhitespace=false,
+  breaklines=true,
+  captionpos=b,
+  keepspaces=true,
+  numbers=left,
+  numbersep=5pt,
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  tabsize=2,
+  language=C
+}
+
+\title{Rapport de TP3 d'IT45}
+\author{Adrien Burgun}
+\date{Printemps 2022}
+
+\begin{document}
+
+\maketitle
+
+\section{Implémentation de l'algorithme de Little}
+
+\subsection{Calcul des distances}
+
+Nous avons en entrée les variables $N_{cities}$, le nombre de villes, et $(x_i, y_i)$, les coordonnées de celles-cis.
+Pour pouvoir utiliser l'algorithme de Little, nous calculons la matrices des distances $D$, tel que $D_{ij}$ soit la distance de la ville $i$ jusqu'à la ville $j$.
+Nous pouvons utiliser la relation
+
+\[
+  \forall i \neq j, \quad D_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}
+\]
+
+La signature dans l'implémentation en C de la matrice $D$ diffère de celle initiallement proposée: je voulais que le code ne soit pas dépendant de la variable \texttt{NBR\_TOWNS}. Il m'est donc impossible d'indiquer au compileur la taille de $D$ sans utiliser des VLA.
+Pour accéder à $D_{ij}$, il faut donc écrire \texttt{dist[j * n\_cities + i]} au lieu de \texttt{dist[j][i]}.
+
+\lstinputlisting[style=C, firstline=95, lastline=107]{little.c}
+
+\subsection{Heuristique du voisin le plus proche}
+
+Pour que l'algorithme de Little fonctionne au mieux, il faut lui donner comme information une borne initiale de la distance parcourue.
+Plus cette borne est proche de la solution optimale, plus l'algorithme de Little sera efficace à ignorer les branches non-optimales.
+
+Nous construisons cette solution initiale en suivant l'heuristique du voisin le plus proche.
+À l'étape $i$, on choisit la prochaine ville de la manière suivante:
+
+\begin{align*}
+  u_{i+1} &= \arg \min_{k \in S_i}(D[u_i,u_k]) \\
+  S_i &= \llbracket 0; \; N_{cities} \rrbracket \; \backslash \; \{ k \;|\; \exists \; n \le i, u_n = k \}
+\end{align*}
+
+\lstinputlisting[style=C, linerange={162-200,211-222}]{little.c}
+
+\subsection{Algorithme de Little}
+
+L'algorithme de Little cherche le cycle Hamiltonien optimal en appliquant la méthode de Branch and Bound avec les informations que l'on peut déduire de la matrice des distances $D$.
+
+À chaque noeud, on vérifie si l'on a construit un chemin entier et on compare dans ce cas ce chemin avec la meilleure solution trouvée auparavant:
+
+\lstinputlisting[style=C, linerange={478-483,485-490,495-495}]{little.c}
+
+Ensuite, on soustrait d'abords à chaque colonne $i$ la valeur de $\min_{j}(D_{ij})$, et on incrémente la valeur minimale du noeud (\texttt{eval}) par cette quantité.
+On fait de même pour les lignes $j$; on obtient alors $D'$, une matrice où chaque colonne et chaque ligne est soit infinie, soit contient un ou plusieurs zéros.
+
+\lstinputlisting[style=C, linerange={507-519,521-539,541-545}]{little.c}
+
+On vérifie ensuite si la nouvelle valeur de \texttt{eval} ne dépasse pas la valeur optimale trouvée \texttt{best\_eval}
+
+\section{Mesure des performances}
+
+\begin{figure}[H]
+  \caption{Temps pris par Little}
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      bar width=0.4cm,
+      width=\columnwidth,
+      height=0.5\columnwidth,
+      ymax=1000,
+      xtick=data,
+      ymajorgrids=true,
+      xlabel={$N_{cities}$},
+      xtick align=inside,
+      ylabel={Temps (s, lin)}
+    ]
+      \addplot+[ybar,fill=blue,thick] table[col sep=comma, header=true, x index=0, y index=1] {little.csv};
+    \end{axis}
+  \end{tikzpicture}
+
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=\columnwidth,
+      height=0.5\columnwidth,
+      ymode=log,
+      log ticks with fixed point,
+      ymin=0.0001,
+      ymax=1000,
+      ymajorgrids=true,
+      xtick=data,
+      xlabel={$N_{cities}$},
+      ylabel={Temps (s, log)}
+    ]
+      \addplot+[color=blue,thick] table[col sep=comma, header=true, x index=0, y index=1] {little.csv};
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+\begin{figure}[H]
+  \caption{Temps pris par Little+}
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      bar width=0.2cm,
+      width=\columnwidth,
+      height=0.5\columnwidth,
+      ymax=60,
+      xmin=0,
+      xmax=55,
+      % xtick=data,
+      ymajorgrids=true,
+      xlabel={$N_{cities}$},
+      xtick align=inside,
+      ylabel={Temps (s, lin)}
+    ]
+      \addplot+[ybar,fill=blue,thick] table[col sep=comma, header=true, x index=0, y index=1] {littleplus.csv};
+    \end{axis}
+  \end{tikzpicture}
+
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=\columnwidth,
+      height=0.5\columnwidth,
+      ymode=log,
+      log ticks with fixed point,
+      ymin=0.0001,
+      ymax=100,
+      ymajorgrids=true,
+      xmin=0,
+      xmax=55,
+      % xtick=data,
+      xlabel={$N_{cities}$},
+      ylabel={Temps (s, log)}
+    ]
+      \addplot+[color=blue,thick] table[col sep=comma, header=true, x index=0, y index=1] {littleplus.csv};
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+\end{document}

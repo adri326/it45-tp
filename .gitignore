@@ -6,3 +6,11 @@ tp1/tsp-coord2distmatrix.sci
 build/
 *.o
 *.csv
+
+*.log
+*.out
+*.aux
+*.auxlock
+*.md5
+*.dep
+*.dpth

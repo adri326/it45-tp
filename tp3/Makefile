@@ -25,6 +25,13 @@ clean:
 format:
 	clang-format -i little.c little.h test.c
 
+report: $(BUILD_DIR)/report.pdf
+
+.PHONY: all clean format report
+
+$(BUILD_DIR)/report.pdf: report.tex
+	pdflatex -interaction=nonstopmode -halt-on-error -shell-escape -output-directory=$(BUILD_DIR) report.tex
+
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 

@@ -92,8 +92,7 @@ double dist2(float a[2], float b[2]) {
     return sqrt(dx * dx + dy * dy);
 }
 
-/// Computes the `dist` matrix, returning a 2d array of dimensions
-/// `(n_coords, n_coords)`
+/// Computes the `dist` matrix, returning a 2d array of dimensions `(n_coords, n_coords)`
 double* compute_distance(float coords[][2], size_t n_coords) {
     double* res = malloc(sizeof(double) * n_coords * n_coords);
     for (size_t x = 0; x < n_coords; x++) {
@@ -161,10 +160,9 @@ double evaluate(const double* dist, int* sol, size_t n_cities) {
     Function called by `build_nearest_neighbor`.
 **/
 solution_t build_nearest_neighbor_sub(const double* dist, size_t n_cities) {
-    // Build the solution
+    // Initialize the solution with -1
     int* solution = malloc(sizeof(int) * n_cities);
-    for (size_t i = 0; i < n_cities; i++)
-        solution[i] = -1;
+    for (size_t i = 0; i < n_cities; i++) solution[i] = -1;
 
     size_t current = 0;
     solution[0] = 0;
@@ -176,27 +174,36 @@ solution_t build_nearest_neighbor_sub(const double* dist, size_t n_cities) {
         double candidate_score = 0.0;
         for (size_t j = 1; j < n_cities; j++) {
             bool already_reached = false;
-            if (j == current || dist[current * n_cities + j] < 0)
-                continue; // Ignore invalid paths
-            for (size_t i = 0; i < n; i++) {
-                already_reached = already_reached || (solution[i] == (int)j);
-            }
-            if (already_reached)
-                continue; // Ignore cities already explored
+            double current_dist = dist[current * n_cities + j];
 
-            if (dist[current * n_cities + j] < candidate_score ||
-                candidate == -1) {
+            // Ignore invalid paths
+            if (j == current || current_dist < 0) continue;
+
+            for (size_t i = 0; i < n; i++) {
+                if (solution[i] == (int)j) {
+                    already_reached = true;
+                    break;
+                }
+            }
+
+            // Ignore cities already explored
+            if (already_reached) continue;
+
+            // Update min and argmin
+            if (current_dist < candidate_score || candidate == -1) {
                 candidate = j;
-                candidate_score = dist[current * n_cities + j];
+                candidate_score = current_dist;
             }
         }
 
         if (candidate == -1) {
             fprintf(stderr, "No city reachable from city %zu!\n", current);
-            if (n > 1)
+
+            if (n > 1) {
                 fprintf(stderr, "Path so far:\n");
-            for (size_t i = 1; i < n; i++) {
-                fprintf(stderr, "%d -> %d\n", solution[i - 1], solution[i]);
+                for (size_t i = 1; i < n; i++) {
+                    fprintf(stderr, "%d -> %d\n", solution[i - 1], solution[i]);
+                }
             }
 
             solution_t res = {.solution = NULL, .evaluation = -1.0};
@@ -209,10 +216,6 @@ solution_t build_nearest_neighbor_sub(const double* dist, size_t n_cities) {
     }
 
     evaluation += dist[current * n_cities + 0];
-
-    // for (size_t i = 1; i < n_cities; i++) {
-    //     printf("%d -> %d\n", solution[i - 1], solution[i]);
-    // }
 
     solution_t res = {.solution = solution, .evaluation = evaluation};
     return res;
@@ -515,7 +518,9 @@ void little_algorithm_rec(
         eval += min;
         for (size_t y = 0; y < n_cities; y++) {
             // Should be optimizable with cmov or the f registers
-            if (current_dist[y * n_cities + x] >= 0) current_dist[y * n_cities + x] -= min;
+            if (current_dist[y * n_cities + x] >= 0) {
+                current_dist[y * n_cities + x] -= min;
+            }
         }
     }
 
@@ -533,7 +538,9 @@ void little_algorithm_rec(
         eval += min;
         for (size_t x = 0; x < n_cities; x++) {
             // Should be optimizable with cmov or the f registers
-            if (current_dist[y * n_cities + x] >= 0) current_dist[y * n_cities + x] -= min;
+            if (current_dist[y * n_cities + x] >= 0) {
+                current_dist[y * n_cities + x] -= min;
+            }
         }
     }
 
