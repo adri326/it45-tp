@@ -29,7 +29,7 @@ report: $(BUILD_DIR)/report.pdf
 
 .PHONY: all clean format report
 
-$(BUILD_DIR)/report.pdf: report.tex
+$(BUILD_DIR)/report.pdf: report.tex berlin52.tex
 	pdflatex -interaction=nonstopmode -halt-on-error -shell-escape -output-directory=$(BUILD_DIR) report.tex
 
 $(BUILD_DIR):

@@ -23,12 +23,14 @@ int main(int argc, char* argv[]) {
     // Calcul de la matrice des distances
     double* dist = compute_distance(berlin52_coords, n_cities);
 
-    printf("Distance Matrix:\n");
-    print_matrix(dist, n_cities);
-    printf("\n");
+    // printf("Distance Matrix:\n");
+    // print_matrix(dist, n_cities);
+    // printf("\n");
 
-    double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
-    printf("%lf\n", nearest_neighbour);
+    solution_t nearest_neighbour = build_nearest_neighbor_sub(dist, n_cities);
+    printf("Nearest neighbor heuristics:\n");
+    print_solution(nearest_neighbour, n_cities);
+    free_solution(nearest_neighbour);
 
     solution_t solution = little_algorithm(dist, n_cities, true, better_approx);
 
