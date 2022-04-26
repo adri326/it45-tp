@@ -4,7 +4,7 @@
 #include "little.h"
 
 int main(int argc, char* argv[]) {
-    const int MAX_TIME = argc > 0 ? atoi(argv[1]) : 60;
+    const int MAX_TIME = argc > 1 ? atoi(argv[1]) : 60;
     printf("\"n\", \"Time (s)\"\n");
 
     for (size_t n_cities = 3; n_cities <= MAX_CITIES; n_cities++) {

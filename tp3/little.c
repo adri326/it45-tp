@@ -413,7 +413,7 @@ solution_t little_algorithm(
 
         double nearest_neighbour = build_nearest_neighbor(dist, n_cities);
 
-        printf("approx: %lf, nn: %lf\n", best_eval, nearest_neighbour);
+        // printf("approx: %lf, nn: %lf\n", best_eval, nearest_neighbour);
 
         if (nearest_neighbour < best_eval) {
             best_eval = nearest_neighbour;
@@ -567,8 +567,12 @@ void little_algorithm_rec(
             double penalty = 0.0;
             // Compute Σ_{n≠i} current_dist[n, y] and Σ_{n≠j} current_dist[x, n] at once
             for (size_t n = 0; n < n_cities; n++) {
-                if (x != n && current_dist[y * n_cities + n] > 0) penalty += current_dist[y * n_cities + n];
-                if (y != n && current_dist[n * n_cities + x] > 0) penalty += current_dist[n * n_cities + x];
+                if (x != n && current_dist[y * n_cities + n] > 0) {
+                    penalty += current_dist[y * n_cities + n];
+                }
+                if (y != n && current_dist[n * n_cities + x] > 0) {
+                    penalty += current_dist[n * n_cities + x];
+                }
             }
 
             if (penalty > best_penalty) {
@@ -613,7 +617,7 @@ void little_algorithm_rec(
     printf("[%zu, %.2lf, %.2lf] Exploring branch %zu→%zu\n", iteration, eval, best_eval, x_zero, y_zero);
     #endif
     /* Explore left child node according to given choice */
-    little_algorithm_rec(dist, buffer, iteration + 1, eval, n_cities, little_plus);
+    little_algorithm_rec(dist, buffer, iteration+1, eval, n_cities, little_plus);
 
     // free(current_dist2);
 
@@ -624,6 +628,7 @@ void little_algorithm_rec(
      *  of the zero with the max penalty
      */
 
+    // Forbid going from x_zero to y_zero
     current_dist[y_zero * n_cities + x_zero] = -1;
 
     #ifdef VERBOSE
